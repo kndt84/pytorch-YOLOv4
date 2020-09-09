@@ -45,12 +45,9 @@ def detect_cv2(cfgfile, weightfile, img):
     sized = cv2.resize(img, (m.width, m.height))
     sized = cv2.cvtColor(sized, cv2.COLOR_BGR2RGB)
 
-    for i in range(2):
-        start = time.time()
-        boxes = do_detect(m, sized, 0.4, 0.6, use_cuda)
-        finish = time.time()
-        if i == 1:
-            print('Predicted in %f seconds.' % (finish - start))
+    start = time.time()
+
+    boxes = do_detect(m, sized, 0.4, 0.6, use_cuda)
 
     objects = []
     for i, box in enumerate(boxes[0]):
@@ -63,9 +60,11 @@ def detect_cv2(cfgfile, weightfile, img):
         dic['feature'] = extract_feature(cropped_img)
         objects.append(dic)
 
-    print({'objects': objects})
+    finish = time.time()
+    print('Predicted in %f seconds.' % (finish - start))
+
+    plot_boxes_cv2(img, boxes[0], savename='predictions.jpg', class_names=class_names)
     return({'objects': objects})
-    # plot_boxes_cv2(img, boxes[0], savename='predictions.jpg', class_names=class_names)
 
 
 def get_args():
@@ -76,7 +75,7 @@ def get_args():
                         default='./weights/yolov4.weights',
                         help='path of trained model.', dest='weightfile')
     parser.add_argument('-imgfile', type=str,
-                        default='./data/giraffe.jpg',
+                        default='./data/traffic.jpg',
                         help='path of your image file.', dest='imgfile')
     args = parser.parse_args()
 
@@ -86,4 +85,5 @@ def get_args():
 if __name__ == '__main__':
     args = get_args()
     img = cv2.imread(args.imgfile)
-    detect_cv2(args.cfgfile, args.weightfile, img)
+    res = detect_cv2(args.cfgfile, args.weightfile, img)
+    print(res)

@@ -82,8 +82,13 @@ def get_args():
     return args
 
 
-if __name__ == '__main__':
+def get_detection_result(img):
     args = get_args()
-    img = cv2.imread(args.imgfile)
-    res = detect_cv2(args.cfgfile, args.weightfile, img)
-    print(res)
+    return detect_cv2(args.cfgfile, args.weightfile, img)
+
+
+# if __name__ == '__main__':
+#     args = get_args()
+#     img = cv2.imread(args.imgfile)
+#     res = detect_cv2(args.cfgfile, args.weightfile, img)
+#     print(res)

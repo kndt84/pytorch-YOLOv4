@@ -3,10 +3,62 @@ import os
 import time
 import math
 import numpy as np
-
+import cv2
 import itertools
 import struct  # get_image_size
 import imghdr  # get_image_size
+
+from torch import nn
+from torchvision import datasets, models, transforms
+from torch.autograd import Variable
+from PIL import Image
+
+
+def extract_feature(img):
+    model = models.googlenet(pretrained=True)
+    layers = list(model.children())[:-2]
+    model = nn.Sequential(*layers, nn.Flatten())
+
+    normalize = transforms.Normalize(
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225])
+
+    preprocess = transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        normalize
+    ])
+
+    new_img = np.copy(img)
+    new_img = cv2.cvtColor(new_img, cv2.COLOR_BGR2RGB)
+    new_img = Image.fromarray(new_img)
+    img_tensor = preprocess(new_img)
+    img_tensor.unsqueeze_(0)
+    out = model(Variable(img_tensor))
+    return out.to('cpu').detach().numpy().ravel()
+
+
+def crop_box(img, box):
+    img = np.copy(img)
+    width = img.shape[1]
+    height = img.shape[0]
+    x0 = int(box[0] * width)
+    y0 = int(box[1] * height)
+    x1 = int(box[2] * width)
+    y1 = int(box[3] * height)
+    return img[y0:y1, x0:x1]
+
+
+def get_bbox_coordinates(img, box):
+    img = np.copy(img)
+    width = img.shape[1]
+    height = img.shape[0]
+    x0 = int(box[0] * width)
+    y0 = int(box[1] * height)
+    x1 = int(box[2] * width)
+    y1 = int(box[3] * height)
+    return {'x0':x0, 'y0': y0, 'x1': x1, 'y1': y1}
 
 
 def sigmoid(x):
@@ -97,7 +149,6 @@ def nms_cpu(boxes, confs, nms_thresh=0.5, min_mode=False):
 
 
 def plot_boxes_cv2(img, boxes, savename=None, class_names=None, color=None):
-    import cv2
     img = np.copy(img)
     colors = np.array([[1, 0, 1], [0, 0, 1], [0, 1, 1], [0, 1, 0], [1, 1, 0], [1, 0, 0]], dtype=np.float32)
 
